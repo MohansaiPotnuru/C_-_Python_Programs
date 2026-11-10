@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  c:
+    name: C (${{ matrix.cc }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build with warnings as errors
+        run: ${{ matrix.cc }} -std=c11 -Wall -Wextra -Wpedantic -Werror -O2 c/advanced_c_programs.c -o advanced_c
+      - name: Run self-checks
+        run: ./advanced_c
+      - name: Run under AddressSanitizer + UBSan
+        run: |
+          ${{ matrix.cc }} -std=c11 -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer \
+            c/advanced_c_programs.c -o advanced_c_san
+          ./advanced_c_san
+
+  python:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run self-checks
+        run: python python/advanced_python_programs.py
